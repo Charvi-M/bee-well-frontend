@@ -1,5 +1,5 @@
 const BACKEND_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://your-render-app.onrender.com'  // Replace with your Render URL
+    ? 'https://bee-well-backend.onrender.com/'  
     : 'http://localhost:5000';  // Local development
 
 
@@ -77,7 +77,7 @@ async function handleFormSubmission(e) {
 
     try {
         // Send user data to backend
-        const response = await fetch('/api/userdata', {
+        const response = await fetch('https://bee-well-backend.onrender.com//api/userdata', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -334,7 +334,7 @@ async function callBackendAPI(userMessage) {
     console.log('Sending message to backend:', userMessage); // Debug log
     
     try {
-        const response = await fetch("/api/chat", {
+        const response = await fetch("https://bee-well-backend.onrender.com/api/chat", {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json" 
