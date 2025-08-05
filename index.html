@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeWell - Your Mental Health Companion</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+            <div class="bee-mascot">
+                <div class="bee-wings">
+                    <div class="wing left"></div>
+                    <div class="wing right"></div>
+                </div>
+                <div class="bee-body">
+                    <div class="bee-stripes"></div>
+                    <div class="bee-face">
+                        <div class="bee-eyes">
+                            <div class="eye"></div>
+                            <div class="eye"></div>
+                        </div>
+                        <div class="bee-smile"></div>
+                    </div>
+                </div>
+            </div>
+            <h1 class="title">BeeWell</h1>
+            <p class="subtitle">🌸 Your AI friend for mental health support 🌸</p>
+        </div>
+
+        <div class="main-content">
+            <div class="welcome-screen" id="welcomeScreen">
+                <h2 style="text-align: center; color: var(--primary-lavender); margin-bottom: 30px;">Hi there! I'm Bee, your mental health companion 🐝</h2>
+                <p style="text-align: center; margin-bottom: 30px; color: var(--text-light);">To provide you with the best support, I'd love to know a little about you. Your information is kept private and secure.</p>
+                
+                <form class="user-form" id="userForm">
+                    <div class="form-group">
+                        <label for="userName">What should I call you?</label>
+                        <input type="text" id="userName" name="userName" placeholder="Your preferred name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="userAge">Age Range</label>
+                        <select id="userAge" name="userAge" required>
+                            <option value="">Select your age range</option>
+                            <option value="13-17">13-17</option>
+                            <option value="18-24">18-24</option>
+                            <option value="25-34">25-34</option>
+                            <option value="35-44">35-44</option>
+                            <option value="45-54">45-54</option>
+                            <option value="55-64">55-64</option>
+                            <option value="65+">65+</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="userCountry">Country</label>
+                        <select id="userCountry" name="userCountry" required>
+                            <option value="">Select your country</option>
+                            <option value="India">India</option>
+                            <option value="United States">United States</option>
+                            <option value="United Kingdom">United Kingdom</option>
+                            <option value="Canada">Canada</option>
+                            <option value="Australia">Australia</option>
+                            <option value="Germany">Germany</option>
+                            <option value="France">France</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="financialStatus">Financial Situation</label>
+                        <select id="financialStatus" name="financialStatus" required>
+                            <option value="">Select your situation</option>
+                            <option value="looking-for-free">Looking for free resources</option>
+                            <option value="limited-budget">Limited budget</option>
+                            <option value="moderate-budget">Moderate budget</option>
+                            <option value="comfortable">Financially comfortable</option>
+                        </select>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="hasDiagnosis" name="hasDiagnosis">
+                        <label for="hasDiagnosis">I have been diagnosed with a mental health condition</label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="isMinor" name="isMinor">
+                        <label for="isMinor">I am under 18 years old</label>
+                    </div>
+
+                    <button type="submit" class="btn">Start Chatting with Bee 🐝</button>
+                </form>
+            </div>
+
+            <div class="chat-interface" id="chatInterface">
+                <div class="chat-header">
+                    <div>
+                        <h3 style="color: var(--primary-lavender); margin: 0;">Chat with Bee</h3>
+                        <div class="user-info" id="userInfo"></div>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Messages will be added here dynamically -->
+                </div>
+
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="message-avatar">🐝</div>
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <textarea 
+                        class="chat-input" 
+                        id="chatInput" 
+                        placeholder="Share what's on your mind..."
+                        rows="1"
+                        onkeypress="handleEnterKey(event)"
+                    ></textarea>
+                    <button class="send-btn" onclick="sendMessage()">
+                        ➤
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="new-session-btn" onclick="newChat()" title="Start New Session">
+        +
+    </button>
+    <button class="btn1-secondary" onclick="showWelcomeScreen()">
+    👤+
+    </button>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="../static/script.js"></script>
+</body>
+</html>
