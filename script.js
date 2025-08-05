@@ -1,6 +1,6 @@
-const BACKEND_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://bee-well-backend.onrender.com/'  
-    : 'http://localhost:5000';  // Local development
+// const BACKEND_URL = process.env.NODE_ENV === 'production' 
+//     ? 'https://bee-well-backend.onrender.com/'  
+//     : 'http://localhost:5000';  // Local development
 
 
 // User data and chat history storage
@@ -77,7 +77,7 @@ async function handleFormSubmission(e) {
 
     try {
         // Send user data to backend
-        const response = await fetch('https://bee-well-backend.onrender.com//api/userdata', {
+        const response = await fetch('https://bee-well-backend.onrender.com/api/userdata', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
