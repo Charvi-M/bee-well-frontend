@@ -502,7 +502,7 @@ body {
     display: block;
 }
 
-/* Additional styles for animations and effects */
+/* Animations */
 @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.05); }
@@ -528,7 +528,7 @@ body {
     to { transform: translateX(-50%) translateY(0); }
 }
 
-/* Responsive design */
+/* Responsive */
 @media (max-width: 1300px) {
     .container {
         padding: 10px;
