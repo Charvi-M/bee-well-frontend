@@ -33,6 +33,7 @@ function initTheme() {
 // Load user data and chat history
 function loadUserData() {
     const saved = localStorage.getItem('user');
+    fetch('https://bee-well-backend.onrender.com/').then(response=>response.json()).then(data=>console.log(data)).catch(e=>console.log(e))
     if (saved) {
         userData = JSON.parse(saved);
         chatHistory = JSON.parse(localStorage.getItem('beewell_chat_history')) || [];
