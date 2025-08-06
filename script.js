@@ -341,7 +341,7 @@ async function callBackendAPI(userMessage) {
             },
             body: JSON.stringify({
                 message: userMessage,
-                user_data: userData  // Optional, if needed in future logic
+                user_data: userData
             })
         });
 
