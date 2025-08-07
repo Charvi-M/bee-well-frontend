@@ -164,11 +164,11 @@ function sendWelcomeMessage() {
 
 I can help you with:
 <ul>
-<li> Emotional support and active listening</li>
-<li> Coping strategies and mindfulness techniques</li>
-<li> Mental health resources and helplines</li>
-<li> Information on various disorders based on symptoms</li>
-<li> General guidance on wellness</li>
+<li style='padding-left:2px;'> Emotional support and active listening</li>
+<li style='padding-left:3px;'> Coping strategies and mindfulness techniques</li>
+<li style='padding-left:4px;'> Mental health resources and helplines</li>
+<li style='padding-left:5px;'> Information on various disorders based on symptoms</li>
+<li style='padding-left:1px;'> General guidance on wellness</li>
 </ul>
 Feel free to share what's on your mind. Everything we discuss is private and I'm here to support you without judgment. How are you feeling today?`;
 
