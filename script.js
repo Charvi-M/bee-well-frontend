@@ -51,12 +51,15 @@ function loadUserData() {
 //Save user data
 function saveUserData() {
     localStorage.setItem('user', JSON.stringify(userData));
+
     localStorage.setItem('beewell_chat_history', JSON.stringify(chatHistory));
+
 }
 
 //form submission
 async function handleFormSubmission(e) {
     e.preventDefault();
+    saveUserData();
     
     const formData = new FormData(e.target);
     userData = {
@@ -77,7 +80,14 @@ async function handleFormSubmission(e) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(userData)
+            body: JSON.stringify({
+                userName : localStorage.getItem(userName),
+                userAge : localStorage.getItem(userAge),
+                userCountry : localStorage.getItem(userCountry),
+                financialStatus : localStorage.getItem(financialStatus),
+                hasDiagnosis : localStorage.getItem(hasDiagnosis),
+                timestamp : localStorage.getItem(timestamp)
+            })
         });
 
         if (!response.ok) {
@@ -86,8 +96,6 @@ async function handleFormSubmission(e) {
 
         const result = await response.json();
         console.log('User data response:', result); //Debug log
-
-        saveUserData();
         showChatInterface();
         sendWelcomeMessage();
     } catch (error) {
