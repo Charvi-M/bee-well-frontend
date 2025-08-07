@@ -80,13 +80,9 @@ async function handleFormSubmission(e) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                userName : localStorage.getItem(userName),
-                userAge : localStorage.getItem(userAge),
-                userCountry : localStorage.getItem(userCountry),
-                financialStatus : localStorage.getItem(financialStatus),
-                hasDiagnosis : localStorage.getItem(hasDiagnosis)
-            })
+            body: JSON.stringify(
+                localStorage.getItem("user")
+            )
         });
 
         if (!response.ok) {
