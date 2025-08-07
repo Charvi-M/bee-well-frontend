@@ -71,30 +71,9 @@ async function handleFormSubmission(e) {
         timestamp: new Date().toISOString(),
     };
     saveUserData();
-    console.log('Sending user data:', userData);
+    loadUserData();
+    console.log('Saved user data:', userData);
 
-    try {
-        //Send user data to backend
-        const response = await fetch('https://bee-well-backend.onrender.com/api/userdata', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        console.log(localStorage.getItem("user"));
-        const result = await response.json();
-        console.log('User data response:', result);
-        showChatInterface();
-        sendWelcomeMessage();
-    } catch (error) {
-        console.error('Error sending user data:', error);
-        alert('There was an error setting up your profile. Please try again.');
-    }
 }
 
 //chat screen
