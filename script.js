@@ -92,7 +92,7 @@ async function handleFormSubmission(e) {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        console.log(localStorage.getItem(user.userName));
+        console.log(localStorage.getItem("user"));
         const result = await response.json();
         console.log('User data response:', result);
         showChatInterface();
