@@ -81,7 +81,7 @@ async function handleFormSubmission(e) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(
-                localStorage.getItem("user")
+                JSON.parse(localStorage.getItem("user"))
             )
         });
 
