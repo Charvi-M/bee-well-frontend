@@ -59,18 +59,18 @@ function saveUserData() {
 //form submission
 async function handleFormSubmission(e) {
     e.preventDefault();
-    saveUserData();
+    
     
     const formData = new FormData(e.target);
     userData = {
         userName: formData.get('userName'),
         userAge: formData.get('userAge'),
         userCountry: formData.get('userCountry'),
-        financialStatus: formData.get('financialStatus'), //Fixed: matches backend
+        financialStatus: formData.get('financialStatus'),
         hasDiagnosis: formData.has('hasDiagnosis'),
         timestamp: new Date().toISOString()
     };
-
+    saveUserData();
     console.log('Sending user data:', userData); //Debug log
 
     try {
