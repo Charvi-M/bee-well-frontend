@@ -39,6 +39,7 @@ function loadUserData() {
             //Hide new session button on welcome screen
             document.querySelector('.new-session-btn').classList.remove('show');
             document.querySelector('.btn1-secondary').classList.remove('show');
+            showWelcomeScreen();
         }
     } else {
         //Hide new session button on welcome screen
@@ -64,7 +65,6 @@ async function handleFormSubmission(e) {
         userCountry: formData.get('userCountry'),
         financialStatus: formData.get('financialStatus'), //Fixed: matches backend
         hasDiagnosis: formData.has('hasDiagnosis'),
-        isMinor: formData.has('isMinor'),
         timestamp: new Date().toISOString()
     };
 
@@ -160,12 +160,13 @@ function newChat() {
 
 //Send welcome message
 function sendWelcomeMessage() {
-    const welcomeMsg = `Hello ${userData.userName}! 🐝 I'm Bee, your mental health companion. I'm here to provide emotional support and help you find resources when you need them.
+    const welcomeMsg = `Hello ${userData.userName}! 🐝 I'm Bee, your mental health companion. I'm here to provide emotional support, information related to mental health or disorders and help you find resources when you need them.
 
 I can help you with:
 • Emotional support and active listening
 • Coping strategies and mindfulness techniques  
 • Mental health resources and helplines
+• Information on various disorders based on symptoms
 • General guidance on wellness
 
 Feel free to share what's on your mind. Everything we discuss is private and I'm here to support you without judgment. How are you feeling today?`;
