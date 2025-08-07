@@ -68,10 +68,10 @@ async function handleFormSubmission(e) {
         userCountry: formData.get('userCountry'),
         financialStatus: formData.get('financialStatus'),
         hasDiagnosis: formData.has('hasDiagnosis'),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
     };
     saveUserData();
-    console.log('Sending user data:', userData); //Debug log
+    console.log('Sending user data:', userData);
 
     try {
         //Send user data to backend
@@ -80,9 +80,7 @@ async function handleFormSubmission(e) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(
-                JSON.parse(localStorage.getItem("user"))
-            )
+            body: JSON.stringify(userData)
         });
 
         if (!response.ok) {
@@ -332,6 +330,7 @@ async function handleBotResponse(userMessage) {
 //Backend API call
 async function callBackendAPI(userMessage) {
     console.log('Sending message to backend:', userMessage);
+    loadUserData()
     
     try {
         const response = await fetch("https://bee-well-backend.onrender.com/api/chat", {
