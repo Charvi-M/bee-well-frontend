@@ -85,8 +85,7 @@ async function handleFormSubmission(e) {
                 userAge : localStorage.getItem(userAge),
                 userCountry : localStorage.getItem(userCountry),
                 financialStatus : localStorage.getItem(financialStatus),
-                hasDiagnosis : localStorage.getItem(hasDiagnosis),
-                timestamp : localStorage.getItem(timestamp)
+                hasDiagnosis : localStorage.getItem(hasDiagnosis)
             })
         });
 
