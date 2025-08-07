@@ -163,12 +163,13 @@ function sendWelcomeMessage() {
     const welcomeMsg = `Hello ${userData.userName}! 🐝 I'm Bee, your mental health companion. I'm here to provide emotional support, information related to mental health or disorders and help you find resources when you need them.
 
 I can help you with:
-• Emotional support and active listening
-• Coping strategies and mindfulness techniques  
-• Mental health resources and helplines
-• Information on various disorders based on symptoms
-• General guidance on wellness
-
+<ul>
+<li> Emotional support and active listening
+<li> Coping strategies and mindfulness techniques  
+<li> Mental health resources and helplines
+<li> Information on various disorders based on symptoms
+<li> General guidance on wellness
+</ul>
 Feel free to share what's on your mind. Everything we discuss is private and I'm here to support you without judgment. How are you feeling today?`;
 
     addMessage('bot', welcomeMsg, 'Therapist');
