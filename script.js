@@ -49,8 +49,8 @@ function loadUserData() {
 }
 
 //Save user data
-function saveUserData() {
-    localStorage.setItem('user', JSON.stringify(userData));
+function saveUserData(user) {
+    localStorage.setItem('user', JSON.stringify(user));
 
     localStorage.setItem('beewell_chat_history', JSON.stringify(chatHistory));
 
@@ -70,7 +70,7 @@ async function handleFormSubmission(e) {
         hasDiagnosis: formData.has('hasDiagnosis'),
         timestamp: new Date().toISOString()
     };
-    saveUserData();
+    saveUserData(userData);
     console.log('Sending user data:', userData); //Debug log
 
     try {
@@ -92,7 +92,7 @@ async function handleFormSubmission(e) {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-
+        console.log(localStorage.getItem(userData.userName));
         const result = await response.json();
         console.log('User data response:', result); //Debug log
         showChatInterface();
