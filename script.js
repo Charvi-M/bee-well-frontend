@@ -71,6 +71,7 @@ async function handleFormSubmission(e) {
         timestamp: new Date().toISOString(),
     };
     saveUserData();
+    sendWelcomeMessage();
     loadUserData();
     console.log('Saved user data:', userData);
 
