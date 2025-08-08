@@ -2,7 +2,6 @@ let userData = {};
 let chatHistory = [];
 let isTyping = false;
 
-
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -51,15 +50,12 @@ function loadUserData() {
 //Save user data
 function saveUserData() {
     localStorage.setItem('user', JSON.stringify(userData));
-
     localStorage.setItem('beewell_chat_history', JSON.stringify(chatHistory));
-
 }
 
 //form submission
 async function handleFormSubmission(e) {
     e.preventDefault();
-    
     
     const formData = new FormData(e.target);
     userData = {
@@ -74,7 +70,6 @@ async function handleFormSubmission(e) {
     sendWelcomeMessage();
     loadUserData();
     console.log('Saved user data:', userData);
-
 }
 
 //chat screen
@@ -123,7 +118,6 @@ function showWelcomeScreen() {
     document.getElementById('chatMessages').innerHTML = '';
 }
 
-
 function newChat() {
     if (chatHistory.length > 0) {
         if (!confirm('Are you sure you want to start a new chat? This will clear your current chat history. And you will not be able to access this chat again.')) {
@@ -155,8 +149,6 @@ Feel free to share what's on your mind. Everything we discuss is private and I'm
 
     addMessage('bot', welcomeMsg, 'Therapist');
 }
-
-
 
 //Add message to chat
 function addMessage(sender, content, agentType = '') {
@@ -279,8 +271,8 @@ function hideTypingIndicator() {
 
 function renderMarkdown(content) {
     const html = marked.parse(content); 
-    return html;
-  }
+    return html;
+}
 
 //Handle bot response 
 async function handleBotResponse(userMessage) {
@@ -291,7 +283,7 @@ async function handleBotResponse(userMessage) {
         const result = await callBackendAPI(userMessage);
         console.log('Adding bot message:', result);
         
-        const mdmessage=renderMarkdown(result.response);
+        const mdmessage = renderMarkdown(result.response);
 
         //Add the bot message to the chat
         addMessage('bot', mdmessage, result.agent);
@@ -307,15 +299,18 @@ async function handleBotResponse(userMessage) {
     }
 }
 
-//Backend API call
+//Backend API call - Updated to include chat history
 async function callBackendAPI(userMessage) {
     console.log('Sending message to backend:', userMessage);
     loadUserData();
     console.log('User data being sent:', userData);
+    console.log('Chat history length:', chatHistory.length);
+    
     try {
         const requestBody = {
             message: userMessage,
-            user_data: userData
+            user_data: userData,
+            chat_history: chatHistory  // Include chat history in the request
         };
         
         console.log('Full request body:', requestBody);
