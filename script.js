@@ -1,5 +1,6 @@
 let userData = {};
 let chatHistory = [];
+let sessionId = null;  // Store session ID
 let isTyping = false;
 
 function toggleTheme() {
@@ -30,6 +31,7 @@ function loadUserData() {
     if (saved) {
         userData = JSON.parse(saved);
         chatHistory = JSON.parse(localStorage.getItem('beewell_chat_history')) || [];
+        sessionId = localStorage.getItem('beewell_session_id') || null;  // Load session ID
         
         if (userData.userName) {
             showChatInterface();
@@ -51,6 +53,9 @@ function loadUserData() {
 function saveUserData() {
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('beewell_chat_history', JSON.stringify(chatHistory));
+    if (sessionId) {
+        localStorage.setItem('beewell_session_id', sessionId);  // Save session ID
+    }
 }
 
 //form submission
@@ -102,8 +107,10 @@ function showWelcomeScreen() {
     //Clear data
     localStorage.removeItem('user');
     localStorage.removeItem('beewell_chat_history');
+    localStorage.removeItem('beewell_session_id');  // Clear session ID
     userData = {};
     chatHistory = [];
+    sessionId = null;  // Reset session ID
     
     //Reset form
     document.getElementById('userForm').reset();
@@ -127,7 +134,9 @@ function newChat() {
     
     //Clear data
     localStorage.removeItem('beewell_chat_history');
+    localStorage.removeItem('beewell_session_id');  // Clear session ID for new chat
     chatHistory = [];
+    sessionId = null;  // Reset session ID
     loadUserData();
     //Clear chat messages
     document.getElementById('chatMessages').innerHTML = '';
@@ -299,18 +308,20 @@ async function handleBotResponse(userMessage) {
     }
 }
 
-//Backend API call - Updated to include chat history
+//Backend API call - Updated to include chat history and session ID
 async function callBackendAPI(userMessage) {
     console.log('Sending message to backend:', userMessage);
     loadUserData();
     console.log('User data being sent:', userData);
     console.log('Chat history length:', chatHistory.length);
+    console.log('Session ID being sent:', sessionId);
     
     try {
         const requestBody = {
             message: userMessage,
             user_data: userData,
-            chat_history: chatHistory  // Include chat history in the request
+            chat_history: chatHistory,  // Include chat history in the request
+            session_id: sessionId  // Include session ID in the request
         };
         
         console.log('Full request body:', requestBody);
@@ -329,6 +340,13 @@ async function callBackendAPI(userMessage) {
 
         const data = await response.json();
         console.log('Backend response:', data);
+        
+        // Store the session ID returned by backend
+        if (data.session_id) {
+            sessionId = data.session_id;
+            localStorage.setItem('beewell_session_id', sessionId);
+            console.log('Session ID stored:', sessionId);
+        }
         
         return {
             agent: data.agent || 'Therapist',
