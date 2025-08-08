@@ -310,18 +310,22 @@ async function handleBotResponse(userMessage) {
 //Backend API call
 async function callBackendAPI(userMessage) {
     console.log('Sending message to backend:', userMessage);
-    loadUserData()
-    
+    loadUserData();
+    console.log('User data being sent:', userData);
     try {
+        const requestBody = {
+            message: userMessage,
+            user_data: userData
+        };
+        
+        console.log('Full request body:', requestBody);
+        
         const response = await fetch("https://bee-well-backend.onrender.com/api/chat", {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json" 
             },
-            body: JSON.stringify({
-                message: userMessage,
-                user_data: userData
-            })
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
@@ -329,7 +333,7 @@ async function callBackendAPI(userMessage) {
         }
 
         const data = await response.json();
-        console.log('Backend response:', data); //Debug log
+        console.log('Backend response:', data);
         
         return {
             agent: data.agent || 'Therapist',
