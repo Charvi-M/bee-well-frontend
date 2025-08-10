@@ -504,8 +504,11 @@ function showWelcomeScreen() {
     // Reset form
     document.getElementById('userForm')?.reset();
     
-    // Show welcome screen and hide new session button
-    document.getElementById('welcomeScreen').style.display = 'block';
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    if (welcomeScreen) {
+        welcomeScreen.style.display = 'block';
+        welcomeScreen.style.opacity = '1';
+    }
     document.getElementById('chatInterface').style.display = 'none';
     document.querySelector('.new-session-btn')?.classList.remove('show');
     document.querySelector('.btn1-secondary')?.classList.remove('show');
