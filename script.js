@@ -28,42 +28,251 @@ function generateUserKey(userData) {
     return `${userData.userName}_${userData.timestamp}`;
 }
 
-// Load user data and chat history with session validation
-function loadUserData() {
+// Generate a simple session ID without complex hashing
+function generateSessionId() {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    return `session_${timestamp}_${random}`;
+}
+
+async function restoreUserSession() {
     const saved = localStorage.getItem('user');
-    fetch('https://bee-well-backend.onrender.com/').then(response=>response.json()).then(data=>console.log(data)).catch(e=>console.log(e))
-    
-    if (saved) {
+    if (!saved) return false;
+
+    try {
         userData = JSON.parse(saved);
-        
-        // Generate user key for session validation
         const userKey = generateUserKey(userData);
-        const storedSessionId = localStorage.getItem(`beewell_session_id_${userKey}`);
+        
+        // Load session data
+        sessionId = localStorage.getItem(`beewell_session_id_${userKey}`);
         const storedChatHistory = localStorage.getItem(`beewell_chat_history_${userKey}`);
-        
-        // Load session-specific data
-        sessionId = storedSessionId;
         chatHistory = storedChatHistory ? JSON.parse(storedChatHistory) : [];
-        
-        console.log(`[DEBUG] Loaded data for user: ${userData.userName}`);
-        console.log(`[DEBUG] Session ID: ${sessionId}`);
-        console.log(`[DEBUG] Chat history length: ${chatHistory.length}`);
-        
-        if (userData.userName) {
+
+        // Validate session data
+        if (!sessionId) {
+            console.log('[DEBUG] No session ID found, generating new one');
+            sessionId = generateSessionId();
+            localStorage.setItem(`beewell_session_id_${userKey}`, sessionId);
+        }
+
+        // Test backend connection and session restore
+        if (chatHistory.length > 0) {
+            console.log(`[DEBUG] Attempting to restore session with ${chatHistory.length} messages`);
+            
+            // Send a test message to backend to ensure session is restored
+            try {
+                await testSessionRestore();
+                console.log('[DEBUG] Session successfully restored on backend');
+            } catch (error) {
+                console.warn('[WARN] Backend session restore failed, but continuing with local history');
+            }
+        }
+
+        return true;
+    } catch (error) {
+        console.error('[ERROR] Failed to restore user session:', error);
+        return false;
+    }
+}
+
+// Test if backend can restore the session properly
+async function testSessionRestore() {
+    if (!userData.userName || chatHistory.length === 0) return;
+
+    const testMessage = "continue"; // Simple message to test session
+    
+    const requestBody = {
+        message: testMessage,
+        user_data: userData,
+        chat_history: chatHistory,
+        session_id: sessionId
+    };
+
+    const response = await fetch("https://bee-well-backend.onrender.com/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+        throw new Error(`Session restore test failed: ${response.status}`);
+    }
+
+    // Don't add this test message to the UI
+    const result = await response.json();
+    console.log('[DEBUG] Session restore test successful');
+}
+
+// Enhanced loadUserData function with better restoration
+function loadUserData() {
+    fetch('https://bee-well-backend.onrender.com/')
+        .then(response => response.json())
+        .then(data => console.log('[DEBUG] Backend status:', data))
+        .catch(e => console.log('[WARN] Backend connection issue:', e));
+    
+    restoreUserSession().then(restored => {
+        if (restored && userData.userName) {
+            console.log(`[DEBUG] Successfully restored session for ${userData.userName}`);
+            console.log(`[DEBUG] Session ID: ${sessionId}`);
+            console.log(`[DEBUG] Chat history: ${chatHistory.length} messages`);
+            
             showChatInterface();
             loadChatHistory();
+            
+            // Show welcome back message if returning user
+            if (chatHistory.length > 0) {
+                showWelcomeBackMessage();
+            }
         } else {
-            // Hide new session button on welcome screen
+            console.log('[DEBUG] No valid session to restore');
             document.querySelector('.new-session-btn').classList.remove('show');
             document.querySelector('.btn1-secondary').classList.remove('show');
             showWelcomeScreen();
         }
-    } else {
-        // Hide new session button on welcome screen
-        document.querySelector('.new-session-btn').classList.remove('show');
-        document.querySelector('.btn1-secondary').classList.remove('show');
+    });
+}
+
+// Show a subtle welcome back message
+function showWelcomeBackMessage() {
+    const lastMessageTime = chatHistory.length > 0 ? 
+        new Date(chatHistory[chatHistory.length - 1].timestamp) : null;
+    
+    if (lastMessageTime) {
+        const daysSince = Math.floor((new Date() - lastMessageTime) / (1000 * 60 * 60 * 24));
+        
+        if (daysSince > 0) {
+            const welcomeBackDiv = document.createElement('div');
+            welcomeBackDiv.className = 'welcome-back-message';
+            welcomeBackDiv.style.cssText = `
+                background: var(--accent-color);
+                color: white;
+                padding: 10px 15px;
+                margin: 10px;
+                border-radius: 8px;
+                text-align: center;
+                font-size: 14px;
+                opacity: 0.9;
+            `;
+            
+            let message = `Welcome back, ${userData.userName}! `;
+            if (daysSince === 1) {
+                message += "Continuing from yesterday's conversation.";
+            } else {
+                message += `Continuing from ${daysSince} days ago.`;
+            }
+            
+            welcomeBackDiv.textContent = message;
+            
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.insertBefore(welcomeBackDiv, messagesContainer.firstChild);
+            
+            // Remove welcome back message after 5 seconds
+            setTimeout(() => {
+                if (welcomeBackDiv.parentNode) {
+                    welcomeBackDiv.remove();
+                }
+            }, 5000);
+        }
     }
 }
+
+// Enhanced error handling for API calls
+async function callBackendAPI(userMessage) {
+    console.log(`[DEBUG] Sending message to backend for ${userData.userName}:`, userMessage);
+    console.log('[DEBUG] Current session ID:', sessionId);
+    console.log('[DEBUG] Chat history length:', chatHistory.length);
+    
+    if (!userData.userName || !userData.timestamp) {
+        throw new Error('User data is incomplete');
+    }
+    
+    // Ensure we have a session ID
+    if (!sessionId) {
+        sessionId = generateSessionId();
+        const userKey = generateUserKey(userData);
+        localStorage.setItem(`beewell_session_id_${userKey}`, sessionId);
+        console.log('[DEBUG] Generated new session ID:', sessionId);
+    }
+    
+    try {
+        const requestBody = {
+            message: userMessage,
+            user_data: userData,
+            chat_history: chatHistory, // This ensures backend can restore session
+            session_id: sessionId
+        };
+        
+        console.log('[DEBUG] Request body:', {
+            ...requestBody,
+            chat_history: `Array of ${requestBody.chat_history.length} messages`
+        });
+        
+        const response = await fetch("https://bee-well-backend.onrender.com/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('[DEBUG] Backend response:', data);
+        
+        return {
+            agent: data.agent || 'Therapist',
+            response: data.response || 'I\'m having trouble processing that right now. Could you try rephrasing?'
+        };
+    } catch (error) {
+        console.error('[ERROR] Backend API call failed:', error);
+        throw error;
+    }
+}
+
+// // Load user data and chat history with session validation
+// function loadUserData() {
+//     const saved = localStorage.getItem('user');
+//     fetch('https://bee-well-backend.onrender.com/').then(response=>response.json()).then(data=>console.log(data)).catch(e=>console.log(e))
+    
+//     if (saved) {
+//         userData = JSON.parse(saved);
+        
+//         // Generate user key for session validation
+//         const userKey = generateUserKey(userData);
+//         const storedSessionId = localStorage.getItem(`beewell_session_id_${userKey}`);
+//         const storedChatHistory = localStorage.getItem(`beewell_chat_history_${userKey}`);
+        
+//         // Load or create session ID
+//         if (storedSessionId) {
+//             sessionId = storedSessionId;
+//         } else {
+//             sessionId = generateSessionId();
+//             localStorage.setItem(`beewell_session_id_${userKey}`, sessionId);
+//         }
+        
+//         // Load chat history
+//         chatHistory = storedChatHistory ? JSON.parse(storedChatHistory) : [];
+        
+//         console.log(`[DEBUG] Loaded data for user: ${userData.userName}`);
+//         console.log(`[DEBUG] Session ID: ${sessionId}`);
+//         console.log(`[DEBUG] Chat history length: ${chatHistory.length}`);
+        
+//         if (userData.userName) {
+//             showChatInterface();
+//             loadChatHistory();
+//         } else {
+//             // Hide new session button on welcome screen
+//             document.querySelector('.new-session-btn').classList.remove('show');
+//             document.querySelector('.btn1-secondary').classList.remove('show');
+//             showWelcomeScreen();
+//         }
+//     } else {
+//         // Hide new session button on welcome screen
+//         document.querySelector('.new-session-btn').classList.remove('show');
+//         document.querySelector('.btn1-secondary').classList.remove('show');
+//     }
+// }
 
 // Save user data with user-specific keys
 function saveUserData() {
@@ -101,13 +310,13 @@ async function handleFormSubmission(e) {
         timestamp: new Date().toISOString(), // Unique timestamp for each user session
     };
     
-    // Reset session data for new user
-    sessionId = null;
+    // Generate new session for new user
+    sessionId = generateSessionId();
     chatHistory = [];
     
     saveUserData();
     sendWelcomeMessage();
-    loadUserData();
+    showChatInterface();
     console.log('Saved user data:', userData);
 }
 
@@ -175,12 +384,13 @@ function newChat() {
     if (userData.userName && userData.timestamp) {
         const userKey = generateUserKey(userData);
         localStorage.removeItem(`beewell_chat_history_${userKey}`);
-        localStorage.removeItem(`beewell_session_id_${userKey}`);
+        // Generate new session ID for new chat
+        sessionId = generateSessionId();
+        localStorage.setItem(`beewell_session_id_${userKey}`, sessionId);
     }
     
     // Reset chat data
     chatHistory = [];
-    sessionId = null;
     
     // Clear chat messages
     document.getElementById('chatMessages').innerHTML = '';
@@ -359,62 +569,63 @@ async function handleBotResponse(userMessage) {
     }
 }
 
-// Enhanced Backend API call with better session management
-async function callBackendAPI(userMessage) {
-    console.log(`[DEBUG] Sending message to backend for ${userData.userName}:`, userMessage);
-    console.log('[DEBUG] Current session ID:', sessionId);
-    console.log('[DEBUG] Chat history length:', chatHistory.length);
+// // Enhanced Backend API call with better session management
+// async function callBackendAPI(userMessage) {
+//     console.log(`[DEBUG] Sending message to backend for ${userData.userName}:`, userMessage);
+//     console.log('[DEBUG] Current session ID:', sessionId);
+//     console.log('[DEBUG] Chat history length:', chatHistory.length);
     
-    // Ensure we have current user data
-    if (!userData.userName || !userData.timestamp) {
-        throw new Error('User data is incomplete');
-    }
+//     // Ensure we have current user data
+//     if (!userData.userName || !userData.timestamp) {
+//         throw new Error('User data is incomplete');
+//     }
     
-    try {
-        const requestBody = {
-            message: userMessage,
-            user_data: userData,
-            chat_history: chatHistory,
-            session_id: sessionId  // This will be null for new sessions
-        };
+//     try {
+//         const requestBody = {
+//             message: userMessage,
+//             user_data: userData,
+//             chat_history: chatHistory,
+//             session_id: sessionId  // This will be the user's persistent session ID
+//         };
         
-        console.log('[DEBUG] Full request body:', {
-            ...requestBody,
-            chat_history: `Array of ${requestBody.chat_history.length} messages`
-        });
+//         console.log('[DEBUG] Full request body:', {
+//             ...requestBody,
+//             chat_history: `Array of ${requestBody.chat_history.length} messages`
+//         });
         
-        const response = await fetch("https://bee-well-backend.onrender.com/api/chat", {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json" 
-            },
-            body: JSON.stringify(requestBody)
-        });
+//         const response = await fetch("https://bee-well-backend.onrender.com/api/chat", {
+//             method: "POST",
+//             headers: { 
+//                 "Content-Type": "application/json" 
+//             },
+//             body: JSON.stringify(requestBody)
+//         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
 
-        const data = await response.json();
-        console.log('[DEBUG] Backend response:', data);
+//         const data = await response.json();
+//         console.log('[DEBUG] Backend response:', data);
         
-        // Store the session ID returned by backend with user-specific key
-        if (data.session_id) {
-            sessionId = data.session_id;
-            const userKey = generateUserKey(userData);
-            localStorage.setItem(`beewell_session_id_${userKey}`, sessionId);
-            console.log(`[DEBUG] Updated session ID for ${userData.userName}:`, sessionId);
-        }
+//         // The session ID should remain the same for the user
+//         // Only update if backend provides a new one (shouldn't happen in normal flow)
+//         if (data.session_id && data.session_id !== sessionId) {
+//             sessionId = data.session_id;
+//             const userKey = generateUserKey(userData);
+//             localStorage.setItem(`beewell_session_id_${userKey}`, sessionId);
+//             console.log(`[DEBUG] Updated session ID for ${userData.userName}:`, sessionId);
+//         }
         
-        return {
-            agent: data.agent || 'Therapist',
-            response: data.response || 'I\'m having trouble processing that right now. Could you try rephrasing?'
-        };
-    } catch (error) {
-        console.error('[ERROR] Backend API call failed:', error);
-        throw error; // Re-throw to be handled by caller
-    }
-}
+//         return {
+//             agent: data.agent || 'Therapist',
+//             response: data.response || 'I\'m having trouble processing that right now. Could you try rephrasing?'
+//         };
+//     } catch (error) {
+//         console.error('[ERROR] Backend API call failed:', error);
+//         throw error; // Re-throw to be handled by caller
+//     }
+// }
 
 // Auto-resize textarea
 function autoResize() {
