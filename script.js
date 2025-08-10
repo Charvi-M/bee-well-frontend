@@ -26,7 +26,6 @@ function initTheme() {
 
 // Show loading screen
 function showLoadingScreen() {
-    // Create loading screen if it doesn't exist
     let loadingScreen = document.getElementById('loadingScreen');
     if (!loadingScreen) {
         loadingScreen = document.createElement('div');
