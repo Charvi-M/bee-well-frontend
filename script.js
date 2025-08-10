@@ -26,7 +26,7 @@ function initTheme() {
 
 // Show loading screen
 function showLoadingScreen() {
-    let formScreen = document.getElementById('userForm');
+    let formScreen = document.getElementById('welcomeScreen');
     if (formScreen) {
         formScreen.style.opacity = '0';
         setTimeout(() => {
