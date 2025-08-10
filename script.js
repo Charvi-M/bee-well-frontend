@@ -1,6 +1,6 @@
 let userData = {};
 let chatHistory = [];
-let sessionId = null;  // Store session ID
+let sessionId = null;
 let isTyping = false;
 
 function toggleTheme() {
@@ -19,8 +19,121 @@ function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
     const toggleBtn = document.querySelector('.theme-toggle');
-    toggleBtn.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-    loadUserData();
+    if (toggleBtn) {
+        toggleBtn.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    }
+}
+
+// Show loading screen
+function showLoadingScreen() {
+    // Create loading screen if it doesn't exist
+    let loadingScreen = document.getElementById('loadingScreen');
+    if (!loadingScreen) {
+        loadingScreen = document.createElement('div');
+        loadingScreen.id = 'loadingScreen';
+        loadingScreen.innerHTML = `
+            <div class="loading-content">
+                <div class="loading-bee">🐝</div>
+                <div class="loading-text">Checking for previous conversations...</div>
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        `;
+        loadingScreen.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        `;
+        document.body.appendChild(loadingScreen);
+        
+        // Add CSS for loading animations
+        const style = document.createElement('style');
+        style.textContent = `
+            .loading-content {
+                text-align: center;
+                color: var(--text-color);
+            }
+            
+            .loading-bee {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                animation: bounce 2s infinite;
+            }
+            
+            .loading-text {
+                font-size: 1.1rem;
+                margin-bottom: 1rem;
+                color: var(--text-secondary);
+            }
+            
+            .loading-dots {
+                display: flex;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            
+            .loading-dots span {
+                width: 8px;
+                height: 8px;
+                background: var(--accent-color);
+                border-radius: 50%;
+                animation: pulse 1.5s infinite;
+            }
+            
+            .loading-dots span:nth-child(2) {
+                animation-delay: 0.3s;
+            }
+            
+            .loading-dots span:nth-child(3) {
+                animation-delay: 0.6s;
+            }
+            
+            @keyframes bounce {
+                0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                40% { transform: translateY(-10px); }
+                60% { transform: translateY(-5px); }
+            }
+            
+            @keyframes pulse {
+                0%, 100% { opacity: 0.3; transform: scale(1); }
+                50% { opacity: 1; transform: scale(1.2); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    loadingScreen.style.display = 'flex';
+    loadingScreen.style.opacity = '1';
+}
+
+// Hide loading screen
+function hideLoadingScreen() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 500);
+    }
+}
+
+// Update loading text
+function updateLoadingText(text) {
+    const loadingText = document.querySelector('.loading-text');
+    if (loadingText) {
+        loadingText.textContent = text;
+    }
 }
 
 // Generate unique user identifier for session validation
@@ -35,7 +148,24 @@ function generateSessionId() {
     return `session_${timestamp}_${random}`;
 }
 
+// Quick synchronous check for user data
+function hasStoredUserData() {
+    try {
+        const saved = localStorage.getItem('user');
+        if (!saved) return false;
+        
+        const userData = JSON.parse(saved);
+        return userData && userData.userName && userData.timestamp;
+    } catch (error) {
+        console.error('[ERROR] Failed to check stored user data:', error);
+        return false;
+    }
+}
+
+// Fast session restoration
 async function restoreUserSession() {
+    updateLoadingText('Loading your profile...');
+    
     const saved = localStorage.getItem('user');
     if (!saved) return false;
 
@@ -43,7 +173,9 @@ async function restoreUserSession() {
         userData = JSON.parse(saved);
         const userKey = generateUserKey(userData);
         
-        // Load session data
+        updateLoadingText('Restoring chat history...');
+        
+        // Load session data synchronously (faster)
         sessionId = localStorage.getItem(`beewell_session_id_${userKey}`);
         const storedChatHistory = localStorage.getItem(`beewell_chat_history_${userKey}`);
         chatHistory = storedChatHistory ? JSON.parse(storedChatHistory) : [];
@@ -55,17 +187,16 @@ async function restoreUserSession() {
             localStorage.setItem(`beewell_session_id_${userKey}`, sessionId);
         }
 
-        // Test backend connection and session restore
+        updateLoadingText('Connecting to server...');
+
+        // Test backend connection in background (don't block UI)
         if (chatHistory.length > 0) {
             console.log(`[DEBUG] Attempting to restore session with ${chatHistory.length} messages`);
             
-            // Send a test message to backend to ensure session is restored
-            try {
-                await testSessionRestore();
-                console.log('[DEBUG] Session successfully restored on backend');
-            } catch (error) {
-                console.warn('[WARN] Backend session restore failed, but continuing with local history');
-            }
+            // Don't await this - let it run in background
+            testSessionRestore().catch(error => {
+                console.warn('[WARN] Backend session restore failed, but continuing with local history:', error);
+            });
         }
 
         return true;
@@ -75,11 +206,11 @@ async function restoreUserSession() {
     }
 }
 
-// Test if backend can restore the session properly
+// Test if backend can restore the session properly (non-blocking)
 async function testSessionRestore() {
     if (!userData.userName || chatHistory.length === 0) return;
 
-    const testMessage = "continue"; // Simple message to test session
+    const testMessage = "continue";
     
     const requestBody = {
         message: testMessage,
@@ -98,38 +229,81 @@ async function testSessionRestore() {
         throw new Error(`Session restore test failed: ${response.status}`);
     }
 
-    // Don't add this test message to the UI
     const result = await response.json();
     console.log('[DEBUG] Session restore test successful');
 }
 
-// Enhanced loadUserData function with better restoration
-function loadUserData() {
-    fetch('https://bee-well-backend.onrender.com/')
-        .then(response => response.json())
-        .then(data => console.log('[DEBUG] Backend status:', data))
-        .catch(e => console.log('[WARN] Backend connection issue:', e));
-    
-    restoreUserSession().then(restored => {
-        if (restored && userData.userName) {
-            console.log(`[DEBUG] Successfully restored session for ${userData.userName}`);
-            console.log(`[DEBUG] Session ID: ${sessionId}`);
-            console.log(`[DEBUG] Chat history: ${chatHistory.length} messages`);
-            
-            showChatInterface();
-            loadChatHistory();
-            
-            // Show welcome back message if returning user
-            if (chatHistory.length > 0) {
-                showWelcomeBackMessage();
-            }
-        } else {
-            console.log('[DEBUG] No valid session to restore');
-            document.querySelector('.new-session-btn').classList.remove('show');
-            document.querySelector('.btn1-secondary').classList.remove('show');
-            showWelcomeScreen();
+// Quick backend health check (with timeout)
+async function quickBackendCheck() {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+        
+        const response = await fetch('https://bee-well-backend.onrender.com/', {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('[DEBUG] Backend status:', data);
+            return true;
         }
-    });
+        return false;
+    } catch (error) {
+        console.log('[WARN] Backend connection issue (non-blocking):', error.message);
+        return false;
+    }
+}
+
+// Enhanced loadUserData function with loading screen
+async function loadUserData() {
+    // Check if we have user data immediately
+    const hasUserData = hasStoredUserData();
+    
+    if (hasUserData) {
+        showLoadingScreen();
+        
+        try {
+            // Start backend check in background (don't block)
+            quickBackendCheck();
+            
+            // Restore user session (fast)
+            const restored = await restoreUserSession();
+            
+            if (restored && userData.userName) {
+                console.log(`[DEBUG] Successfully restored session for ${userData.userName}`);
+                console.log(`[DEBUG] Session ID: ${sessionId}`);
+                console.log(`[DEBUG] Chat history: ${chatHistory.length} messages`);
+                
+                updateLoadingText('Almost ready...');
+                
+                // Small delay to show completion
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                hideLoadingScreen();
+                showChatInterface();
+                loadChatHistory();
+                
+                // Show welcome back message if returning user
+                if (chatHistory.length > 0) {
+                    showWelcomeBackMessage();
+                }
+                return;
+            }
+        } catch (error) {
+            console.error('[ERROR] Failed to load user data:', error);
+            hideLoadingScreen();
+        }
+    }
+    
+    // No user data or failed to restore - show welcome screen
+    console.log('[DEBUG] No valid session to restore');
+    hideLoadingScreen();
+    document.querySelector('.new-session-btn')?.classList.remove('show');
+    document.querySelector('.btn1-secondary')?.classList.remove('show');
+    showWelcomeScreen();
 }
 
 // Show a subtle welcome back message
@@ -152,6 +326,7 @@ function showWelcomeBackMessage() {
                 text-align: center;
                 font-size: 14px;
                 opacity: 0.9;
+                animation: slideIn 0.5s ease;
             `;
             
             let message = `Welcome back, ${userData.userName}! `;
@@ -169,7 +344,9 @@ function showWelcomeBackMessage() {
             // Remove welcome back message after 5 seconds
             setTimeout(() => {
                 if (welcomeBackDiv.parentNode) {
-                    welcomeBackDiv.remove();
+                    welcomeBackDiv.style.opacity = '0';
+                    welcomeBackDiv.style.transform = 'translateY(-20px)';
+                    setTimeout(() => welcomeBackDiv.remove(), 300);
                 }
             }, 5000);
         }
@@ -198,7 +375,7 @@ async function callBackendAPI(userMessage) {
         const requestBody = {
             message: userMessage,
             user_data: userData,
-            chat_history: chatHistory, // This ensures backend can restore session
+            chat_history: chatHistory,
             session_id: sessionId
         };
         
@@ -229,50 +406,6 @@ async function callBackendAPI(userMessage) {
         throw error;
     }
 }
-
-// // Load user data and chat history with session validation
-// function loadUserData() {
-//     const saved = localStorage.getItem('user');
-//     fetch('https://bee-well-backend.onrender.com/').then(response=>response.json()).then(data=>console.log(data)).catch(e=>console.log(e))
-    
-//     if (saved) {
-//         userData = JSON.parse(saved);
-        
-//         // Generate user key for session validation
-//         const userKey = generateUserKey(userData);
-//         const storedSessionId = localStorage.getItem(`beewell_session_id_${userKey}`);
-//         const storedChatHistory = localStorage.getItem(`beewell_chat_history_${userKey}`);
-        
-//         // Load or create session ID
-//         if (storedSessionId) {
-//             sessionId = storedSessionId;
-//         } else {
-//             sessionId = generateSessionId();
-//             localStorage.setItem(`beewell_session_id_${userKey}`, sessionId);
-//         }
-        
-//         // Load chat history
-//         chatHistory = storedChatHistory ? JSON.parse(storedChatHistory) : [];
-        
-//         console.log(`[DEBUG] Loaded data for user: ${userData.userName}`);
-//         console.log(`[DEBUG] Session ID: ${sessionId}`);
-//         console.log(`[DEBUG] Chat history length: ${chatHistory.length}`);
-        
-//         if (userData.userName) {
-//             showChatInterface();
-//             loadChatHistory();
-//         } else {
-//             // Hide new session button on welcome screen
-//             document.querySelector('.new-session-btn').classList.remove('show');
-//             document.querySelector('.btn1-secondary').classList.remove('show');
-//             showWelcomeScreen();
-//         }
-//     } else {
-//         // Hide new session button on welcome screen
-//         document.querySelector('.new-session-btn').classList.remove('show');
-//         document.querySelector('.btn1-secondary').classList.remove('show');
-//     }
-// }
 
 // Save user data with user-specific keys
 function saveUserData() {
@@ -307,7 +440,7 @@ async function handleFormSubmission(e) {
         userCountry: formData.get('userCountry'),
         financialStatus: formData.get('financialStatus'),
         hasDiagnosis: formData.has('hasDiagnosis'),
-        timestamp: new Date().toISOString(), // Unique timestamp for each user session
+        timestamp: new Date().toISOString(),
     };
     
     // Generate new session for new user
@@ -326,16 +459,18 @@ function showChatInterface() {
     document.getElementById('chatInterface').style.display = 'flex';
     
     // Show new session button
-    document.querySelector('.new-session-btn').classList.add('show');
-    document.querySelector('.btn1-secondary').classList.add('show');
+    document.querySelector('.new-session-btn')?.classList.add('show');
+    document.querySelector('.btn1-secondary')?.classList.add('show');
     
     // User info display
     const userInfo = document.getElementById('userInfo');
-    userInfo.textContent = `${userData.userName} • ${userData.userAge} • ${userData.userCountry}`;
+    if (userInfo) {
+        userInfo.textContent = `${userData.userName} • ${userData.userAge} • ${userData.userCountry}`;
+    }
     
     // Focus on chat input
     setTimeout(() => {
-        document.getElementById('chatInput').focus();
+        document.getElementById('chatInput')?.focus();
     }, 100);
 }
 
@@ -361,16 +496,19 @@ function showWelcomeScreen() {
     sessionId = null;
     
     // Reset form
-    document.getElementById('userForm').reset();
+    document.getElementById('userForm')?.reset();
     
     // Show welcome screen and hide new session button
     document.getElementById('welcomeScreen').style.display = 'block';
     document.getElementById('chatInterface').style.display = 'none';
-    document.querySelector('.new-session-btn').classList.remove('show');
-    document.querySelector('.btn1-secondary').classList.remove('show');
+    document.querySelector('.new-session-btn')?.classList.remove('show');
+    document.querySelector('.btn1-secondary')?.classList.remove('show');
     
     // Clear chat messages
-    document.getElementById('chatMessages').innerHTML = '';
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        chatMessages.innerHTML = '';
+    }
 }
 
 function newChat() {
@@ -393,7 +531,10 @@ function newChat() {
     chatHistory = [];
     
     // Clear chat messages
-    document.getElementById('chatMessages').innerHTML = '';
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        chatMessages.innerHTML = '';
+    }
     
     // Send new welcome message
     sendWelcomeMessage();
@@ -419,6 +560,8 @@ Feel free to share what's on your mind. Everything we discuss is private and I'm
 // Add message to chat
 function addMessage(sender, content, agentType = '') {
     const messagesContainer = document.getElementById('chatMessages');
+    if (!messagesContainer) return;
+    
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}`;
 
@@ -465,6 +608,8 @@ function addMessage(sender, content, agentType = '') {
 // Load chat history
 function loadChatHistory() {
     const messagesContainer = document.getElementById('chatMessages');
+    if (!messagesContainer) return;
+    
     messagesContainer.innerHTML = '';
 
     chatHistory.forEach(msg => {
@@ -501,6 +646,8 @@ function loadChatHistory() {
 // Send message
 function sendMessage() {
     const input = document.getElementById('chatInput');
+    if (!input) return;
+    
     const message = input.value.trim();
 
     if (!message || isTyping) return;
@@ -526,22 +673,30 @@ function handleEnterKey(event) {
 function showTypingIndicator() {
     isTyping = true;
     const indicator = document.getElementById('typingIndicator');
-    indicator.style.display = 'flex';
+    if (indicator) {
+        indicator.style.display = 'flex';
+    }
     
     const messagesContainer = document.getElementById('chatMessages');
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
 }
 
 // Hide typing indicator
 function hideTypingIndicator() {
     isTyping = false;
     const indicator = document.getElementById('typingIndicator');
-    indicator.style.display = 'none';
+    if (indicator) {
+        indicator.style.display = 'none';
+    }
 }
 
 function renderMarkdown(content) {
-    const html = marked.parse(content); 
-    return html;
+    if (typeof marked !== 'undefined') {
+        return marked.parse(content);
+    }
+    return content; // Fallback if marked is not available
 }
 
 // Handle bot response with improved error handling
@@ -569,69 +724,13 @@ async function handleBotResponse(userMessage) {
     }
 }
 
-// // Enhanced Backend API call with better session management
-// async function callBackendAPI(userMessage) {
-//     console.log(`[DEBUG] Sending message to backend for ${userData.userName}:`, userMessage);
-//     console.log('[DEBUG] Current session ID:', sessionId);
-//     console.log('[DEBUG] Chat history length:', chatHistory.length);
-    
-//     // Ensure we have current user data
-//     if (!userData.userName || !userData.timestamp) {
-//         throw new Error('User data is incomplete');
-//     }
-    
-//     try {
-//         const requestBody = {
-//             message: userMessage,
-//             user_data: userData,
-//             chat_history: chatHistory,
-//             session_id: sessionId  // This will be the user's persistent session ID
-//         };
-        
-//         console.log('[DEBUG] Full request body:', {
-//             ...requestBody,
-//             chat_history: `Array of ${requestBody.chat_history.length} messages`
-//         });
-        
-//         const response = await fetch("https://bee-well-backend.onrender.com/api/chat", {
-//             method: "POST",
-//             headers: { 
-//                 "Content-Type": "application/json" 
-//             },
-//             body: JSON.stringify(requestBody)
-//         });
-
-//         if (!response.ok) {
-//             throw new Error(`HTTP error! status: ${response.status}`);
-//         }
-
-//         const data = await response.json();
-//         console.log('[DEBUG] Backend response:', data);
-        
-//         // The session ID should remain the same for the user
-//         // Only update if backend provides a new one (shouldn't happen in normal flow)
-//         if (data.session_id && data.session_id !== sessionId) {
-//             sessionId = data.session_id;
-//             const userKey = generateUserKey(userData);
-//             localStorage.setItem(`beewell_session_id_${userKey}`, sessionId);
-//             console.log(`[DEBUG] Updated session ID for ${userData.userName}:`, sessionId);
-//         }
-        
-//         return {
-//             agent: data.agent || 'Therapist',
-//             response: data.response || 'I\'m having trouble processing that right now. Could you try rephrasing?'
-//         };
-//     } catch (error) {
-//         console.error('[ERROR] Backend API call failed:', error);
-//         throw error; // Re-throw to be handled by caller
-//     }
-// }
-
 // Auto-resize textarea
 function autoResize() {
     const textarea = document.getElementById('chatInput');
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    if (textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
 }
 
 // Enhanced message handling with better animations
@@ -644,30 +743,6 @@ function animateNewMessage(messageElement) {
         messageElement.style.opacity = '1';
         messageElement.style.transform = 'translateY(0)';
     });
-}
-
-// Enhanced user experience features
-function showConnectionStatus(status) {
-    // Show connection status to backend
-    const statusElement = document.createElement('div');
-    statusElement.className = 'connection-status';
-    statusElement.textContent = status;
-    statusElement.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: var(--primary-color);
-        color: white;
-        padding: 10px 15px;
-        border-radius: 5px;
-        z-index: 1000;
-        font-size: 14px;
-    `;
-    document.body.appendChild(statusElement);
-    
-    setTimeout(() => {
-        statusElement.remove();
-    }, 3000);
 }
 
 // Accessibility improvements
@@ -708,11 +783,16 @@ function debugSessionState() {
 }
 
 // Initialize the app
-function initializeApp() {
+async function initializeApp() {
     console.log('[DEBUG] Initializing BeeWell app...');
     
+    // Initialize theme first (synchronous)
     initTheme();
-    loadUserData();
+    
+    // Start loading user data immediately
+    await loadUserData();
+    
+    // Initialize accessibility
     initAccessibility();
     
     // Add form submission event listener
