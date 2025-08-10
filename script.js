@@ -26,6 +26,13 @@ function initTheme() {
 
 // Show loading screen
 function showLoadingScreen() {
+    let formScreen = document.getElementById('userForm');
+    if (formScreen) {
+        formScreen.style.opacity = '0';
+        setTimeout(() => {
+            formScreen.style.display = 'none';
+        }, 500);
+    }
     let loadingScreen = document.getElementById('loadingScreen');
     if (!loadingScreen) {
         loadingScreen = document.createElement('div');
